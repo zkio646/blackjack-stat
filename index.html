@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Strategy Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #1e1e1e;
+        }
+        .dealer-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .dealer-button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: transparent;
+            color: #2196F3;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dealer-button.active {
+            background-color: #2196F3;
+            color: white;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-around;
+            background-color: #1e1e1e;
+            padding: 10px 0;
+        }
+        .nav-button {
+            padding: 10px 15px;
+            border: none;
+            background-color: transparent;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .nav-button.active {
+            background-color: #333;
+        }
+        .positive {
+            color: #4CAF50;
+        }
+        .negative {
+            color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content" id="content"></div>
+        <div class="dealer-buttons" id="dealerButtons"></div>
+    </div>
+    <div class="navigation" id="navigation">
+        <button class="nav-button active" data-type="hard">No Aces</button>
+        <button class="nav-button" data-type="soft">Aces</button>
+        <button class="nav-button" data-type="pairs">Pairs</button>
+    </div>
+
+    <script>
+        const blackjackData = {
+            'hard': {
+                20: [[0.6400, 'stand'], [0.6503, 'stand'], [0.6610, 'stand'], [0.6704, 'stand'], [0.7040, 'stand'], [0.7732, 'stand'], [0.7918, 'stand'], [0.7584, 'stand'], [0.4350, 'stand'], [0.1461, 'stand']],
+                19: [[0.3863, 'stand'], [0.4044, 'stand'], [0.4232, 'stand'], [0.4395, 'stand'], [0.4960, 'stand'], [0.6160, 'stand'], [0.5939, 'stand'], [0.2876, 'stand'], [-0.0187, 'stand'], [-0.1155, 'stand']],
+                18: [[0.1217, 'stand'], [0.1483, 'stand'], [0.1759, 'stand'], [0.1996, 'stand'], [0.2834, 'stand'], [0.3996, 'stand'], [0.1060, 'stand'], [-0.1832, 'stand'], [-0.2415, 'stand'], [-0.3771, 'stand']],
+                17: [[-0.1530, 'stand'], [-0.1172, 'stand'], [-0.0806, 'stand'], [-0.0449, 'stand'], [0.0117, 'stand'], [-0.1068, 'stand'], [-0.3820, 'stand'], [-0.4232, 'stand'], [-0.4644, 'stand'], [-0.6386, 'stand']],
+                16: [[-0.2928, 'stand'], [-0.2523, 'stand'], [-0.2111, 'stand'], [-0.1672, 'stand'], [-0.1537, 'stand'], [-0.4148, 'hit'], [-0.4584, 'hit'], [-0.5093, 'hit'], [-0.5752, 'hit'], [-0.6657, 'hit']],
+                15: [[-0.2928, 'stand'], [-0.2523, 'stand'], [-0.2111, 'stand'], [-0.1672, 'stand'], [-0.1537, 'stand'], [-0.3698, 'hit'], [-0.4168, 'hit'], [-0.4716, 'hit'], [-0.5425, 'hit'], [-0.6400, 'hit']],
+                14: [[-0.2928, 'stand'], [-0.2523, 'stand'], [-0.2111, 'stand'], [-0.1672, 'stand'], [-0.1537, 'stand'], [-0.3213, 'hit'], [-0.3719, 'hit'], [-0.4309, 'hit'], [-0.5074, 'hit'], [-0.6123, 'hit']],
+                13: [[-0.2928, 'stand'], [-0.2523, 'stand'], [-0.2111, 'stand'], [-0.1672, 'stand'], [-0.1537, 'stand'], [-0.2691, 'hit'], [-0.3236, 'hit'], [-0.3872, 'hit'], [-0.4695, 'hit'], [-0.5825, 'hit']],
+                12: [[-0.2534, 'hit'], [-0.2337, 'hit'], [-0.2111, 'stand'], [-0.1672, 'stand'], [-0.1537, 'stand'], [-0.2128, 'hit'], [-0.2716, 'hit'], [-0.3400, 'hit'], [-0.4287, 'hit'], [-0.5504, 'hit']],
+                11: [[0.2384, 'double'], [0.2603, 'double'], [0.2830, 'double'], [0.3073, 'double'], [0.3337, 'double'], [0.2921, 'double'], [0.2300, 'double'], [0.1583, 'double'], [0.0334, 'double'], [-0.2087, 'hit']],
+                10: [[0.3589, 'double'], [0.4093, 'double'], [0.4609, 'double'], [0.5125, 'double'], [0.5756, 'double'], [0.3924, 'double'], [0.2866, 'double'], [0.1443, 'double'], [-0.0536, 'hit'], [-0.2513, 'hit']],
+                9: [[0.0744, 'hit'], [0.1208, 'double'], [0.1819, 'double'], [0.2431, 'double'], [0.3171, 'double'], [0.1719, 'hit'], [0.0984, 'hit'], [-0.0522, 'hit'], [-0.2181, 'hit'], [-0.3532, 'hit']],
+            },
+            'soft': {
+                20: [[0.6400, 'stand'], [0.6503, 'stand'], [0.6610, 'stand'], [0.6704, 'stand'], [0.7040, 'stand'], [0.7732, 'stand'], [0.7918, 'stand'], [0.7584, 'stand'], [0.4350, 'stand'], [0.1461, 'stand']],
+                19: [[0.3863, 'stand'], [0.4044, 'stand'], [0.4232, 'stand'], [0.4395, 'stand'], [0.4960, 'stand'], [0.6160, 'stand'], [0.5939, 'stand'], [0.2876, 'stand'], [-0.0187, 'stand'], [-0.1155, 'stand']],
+                18: [[0.1217, 'stand'], [0.1483, 'stand'], [0.1759, 'stand'], [0.1996, 'stand'], [0.2834, 'stand'], [0.3996, 'stand'], [0.1060, 'stand'], [-0.1007, 'hit'], [-0.2097, 'hit'], [-0.3720, 'hit']],
+                17: [[-0.0005, 'hit'], [0.0290, 'hit'], [0.0593, 'hit'], [0.0912, 'hit'], [0.1281, 'hit'], [0.0538, 'hit'], [-0.0729, 'hit'], [-0.1498, 'hit'], [-0.2586, 'hit'], [-0.4320, 'hit']],
+                16: [[-0.0210, 'hit'], [0.0091, 'hit'], [0.0400, 'hit'], [0.0734, 'hit'], [0.0988, 'hit'], [-0.0049, 'hit'], [-0.0668, 'hit'], [-0.1486, 'hit'], [-0.2684, 'hit'], [-0.4224, 'hit']],
+                15: [[-0.0001, 'hit'], [0.0292, 'hit'], [0.0593, 'hit'], [0.0920, 'hit'], [0.1182, 'hit'], [0.0370, 'hit'], [-0.0271, 'hit'], [-0.1122, 'hit'], [-0.2373, 'hit'], [-0.3977, 'hit']],
+                14: [[0.0224, 'hit'], [0.0508, 'hit'], [0.0801, 'hit'], [0.1119, 'hit'], [0.1392, 'hit'], [0.0795, 'hit'], [0.0133, 'hit'], [-0.0752, 'hit'], [-0.2057, 'hit'], [-0.3727, 'hit']],
+                13: [[0.0466, 'hit'], [0.0741, 'hit'], [0.1025, 'hit'], [0.1334, 'hit'], [0.1617, 'hit'], [0.1224, 'hit'], [0.0541, 'hit'], [-0.0377, 'hit'], [-0.1737, 'hit'], [-0.3474, 'hit']],
+            },
+            'pairs': {
+                11: [[0.4706, 'split'], [0.5178, 'split'], [0.5660, 'split'], [0.6147, 'split'], [0.6674, 'split'], [0.4629, 'split'], [0.3507, 'split'], [0.2278, 'split'], [0.0120, 'split'], [-0.3219, 'hit']],
+                10: [[0.6400, 'stand'], [0.6503, 'stand'], [0.6610, 'stand'], [0.6704, 'stand'], [0.7040, 'stand'], [0.7732, 'stand'], [0.7918, 'stand'], [0.7584, 'stand'], [0.4350, 'stand'], [0.1461, 'stand']],
+                9: [[0.1489, 'split'], [0.2025, 'split'], [0.2580, 'split'], [0.3161, 'split'], [0.3920, 'split'], [0.3996, 'split'], [0.1968, 'split'], [-0.1044, 'stand'], [-0.2415, 'stand'], [-0.3771, 'stand']],
+                8: [[-0.0436, 'split'], [0.0160, 'split'], [0.0776, 'split'], [0.1416, 'split'], [0.2299, 'split'], [0.1644, 'split'], [-0.1198, 'split'], [-0.4204, 'split'], [-0.5752, 'split'], [-0.6657, 'split']],
+                7: [[-0.2184, 'split'], [-0.1532, 'split'], [-0.0860, 'split'], [-0.0145, 'split'], [0.0584, 'split'], [-0.1376, 'hit'], [-0.3719, 'hit'], [-0.4309, 'hit'], [-0.5074, 'hit'], [-0.6123, 'hit']],
+                6: [[-0.2534, 'split'], [-0.2146, 'split'], [-0.1458, 'split'], [-0.0698, 'split'], [-0.0260, 'split'], [-0.2128, 'hit'], [-0.2716, 'hit'], [-0.3400, 'hit'], [-0.4287, 'hit'], [-0.5504, 'hit']],
+                5: [[0.3589, 'double'], [0.4093, 'double'], [0.4609, 'double'], [0.5125, 'double'], [0.5756, 'double'], [0.3924, 'double'], [0.2866, 'double'], [0.1443, 'double'], [-0.0536, 'hit'], [-0.2513, 'hit']],
+                4: [[-0.0218, 'hit'], [0.0080, 'hit'], [0.0388, 'hit'], [0.0708, 'hit'], [0.1150, 'hit'], [0.0822, 'hit'], [-0.0599, 'hit'], [-0.2102, 'hit'], [-0.3071, 'hit'], [-0.4441, 'hit']],
+                3: [[-0.1408, 'hit'], [-0.1073, 'hit'], [-0.0725, 'split'], [0.0003, 'split'], [0.0489, 'split'], [-0.1149, 'hit'], [-0.2172, 'hit'], [-0.2926, 'hit'], [-0.3887, 'hit'], [-0.5183, 'hit']],
+                2: [[-0.1149, 'hit'], [-0.0826, 'hit'], [-0.0442, 'split'], [0.0275, 'split'], [0.0778, 'split'], [-0.0545, 'hit'], [-0.1593, 'hit'], [-0.2407, 'hit'], [-0.3439, 'hit'], [-0.4829, 'hit']],
+            }
+        }
+
+        let currentHandType = 'hard';
+        let dealerValue = -1;
+
+        function getEvDec(handType, hand, dealer) {
+            if (dealer < 0) {
+                return [0.0, 'N/A'];
+            }
+            return blackjackData[handType][hand][dealer - 2];
+        }
+
+        function getDecisionColor(decision) {
+            const colorMap = {
+                "hit": "#1B5E20",
+                "stand": "#B71C1C",
+                "double": "#0D47A1",
+                "split": "#4A148C"
+            };
+            return colorMap[decision] || "transparent";
+        }
+
+        function createHandRow(handType, hand, isPairs = false) {
+            const [ev, decision] = getEvDec(handType, hand, dealerValue);
+            const bgColor = getDecisionColor(decision);
+            const evColor = ev >= 0 ? "#4CAF50" : "#F44336";
+            return `
+                <tr style="background-color: ${bgColor}30;">
+                    <td>${isPairs ? `${hand} / ` : ''}${hand}</td>
+                    <td style="color: ${evColor};">${ev > 0 ? '+' : ''}${ev.toFixed(2)} / ${((ev + 1) * 50).toFixed(1)}%</td>
+                    <td>${decision.toUpperCase()}</td>
+                </tr>
+            `;
+        }
+
+        function createContent(handType, start, end, isPairs = false) {
+            let content = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hand</th>
+                            <th>Expected Value</th>
+                            <th>Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            for (let i = end; i >= start; i--) {
+                content += createHandRow(handType, i, isPairs);
+            }
+            content += `
+                    </tbody>
+                </table>
+            `;
+            return content;
+        }
+
+        function updateContent() {
+            const contentElement = document.getElementById('content');
+            if (currentHandType === 'hard') {
+                contentElement.innerHTML = createContent('hard', 9, 20);
+            } else if (currentHandType === 'soft') {
+                contentElement.innerHTML = createContent('soft', 13, 20);
+            } else {
+                contentElement.innerHTML = createContent('pairs', 2, 11, true);
+            }
+        }
+
+        function createDealerButtons() {
+            const dealerButtonsElement = document.getElementById('dealerButtons');
+            for (let i = 2; i <= 11; i++) {
+                const button = document.createElement('button');
+                button.textContent = i === 11 ? 'A' : i;
+                button.className = 'dealer-button';
+                button.onclick = () => {
+                    dealerValue = i;
+                    document.querySelectorAll('.dealer-button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updateContent();
+                };
+                dealerButtonsElement.appendChild(button);
+            }
+        }
+
+        function initializeNavigation() {
+            const navigationElement = document.getElementById('navigation');
+            navigationElement.addEventListener('click', (e) => {
+                if (e.target.classList.contains('nav-button')) {
+                    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentHandType = e.target.dataset.type;
+                    updateContent();
+                }
+            });
+        }
+
+        // Initialize the app
+        createDealerButtons();
+        initializeNavigation();
+        updateContent();
+    </script>
+</body>
+</html>
